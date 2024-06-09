@@ -2,23 +2,14 @@ const HangmanWord = () => {
     const word = "test"
     const guessedLetters = ["e", "t"]
     return (
-        <div style={{
-            display: "flex",
-            gap: ".25em",
-            fontSize: "6rem",
-            fontWeight: "bold",
-            textTransform: "uppercase",
-            fontFamily: "monospace"
-        }}>
-            {word.split("").map((letter, index) =>
-                <span style={{borderBottom: ".1em solid black"}} key={index}>
-                    <span style={{
-                        visibility: guessedLetters.includes(letter) ? "visible" : "hidden"
-                    }}>{letter}</span>
+        <div className="flex gap-[0.25em] text-6xl font-bold uppercase font-mono">
+            {word.split("").map((letter, index) => (
+                <span className="border-b-[0.1em] border-black" key={index}>
+                    <span className={guessedLetters.includes(letter) ? "visible" : "invisible"}>{letter}</span>
                 </span>
-            )}
+            ))}
         </div>
-    );
+    )
 }
 
 export default HangmanWord;

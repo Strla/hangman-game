@@ -13,15 +13,8 @@ function App() {
 
     console.log(wordToGuess)
     return (
-        <div style={{
-            maxWidth: "800px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "2rem",
-            margin: "0 auto",
-            alignItems: "center"
-        }}>
-            <div style={{fontSize: "2rem", textAlign: "center"}}>Lose Win</div>
+        <div className="max-w-xl flex flex-col space-y-8 m-auto items-center">
+            <div className="text-5xl text-center">Lose Win</div>
             <HangmanDrawing/>
             <HangmanWord/>
             <Keyboard/>

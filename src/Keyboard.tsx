@@ -28,20 +28,11 @@ const Keyboard = () => {
         "z",
     ]
     return (
-        <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))",
-            gap: ".5rem",
-            alignSelf: "stretch"
-        }}>
+        <div className="grid grid-cols-custom gap-2 self-stretch">
             {KEYS.map((key, index) => (
-                <button key={index} style={{
-                    fontSize: "1.5rem",
-                    padding: ".5rem",
-                    border: "none",
-                    background: "lightgray",
-                    borderRadius: ".5rem"
-                }}>{key}</button>
+                <button key={index} className="text-custom-xl p-2 border-none bg-gray-300 rounded-custom">
+                    {key}
+                </button>
             ))}
         </div>
     );
