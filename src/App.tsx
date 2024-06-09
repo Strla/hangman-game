@@ -1,62 +1,46 @@
-import {useCallback, useEffect, useState} from "react";
-import HangmanDrawing from "./HangmanDrawing.tsx";
-import HangmanWord from "./HangmanWord.tsx";
-import Keyboard from "./Keyboard.tsx";
+import {useCallback, useEffect, useMemo, useState} from "react";
+import HangmanDrawing from "./HangmanDrawing";
+import HangmanWord from "./HangmanWord";
+import Keyboard from "./Keyboard";
 import words from "./wordList.json";
 
-function getWord() {
-    return words[Math.floor(Math.random() * words.length)]
-}
+const getWord = () => {
+    return words[Math.floor(Math.random() * words.length)];
+};
 
-function App() {
-    const [wordToGuess, setWordToGuess] = useState<string>(getWord());
+const App = () => {
+    const [wordToGuess, setWordToGuess] = useState<string>(getWord);
+    const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
 
-    const [guessedLetters, setGuessedLetters] = useState<string[]>([])
-
-    const incorrectLetters = guessedLetters.filter(letter => !wordToGuess.includes(letter));
+    const incorrectLetters = useMemo(() => guessedLetters.filter(letter => !wordToGuess.includes(letter)), [guessedLetters, wordToGuess]);
 
     const isLoser = incorrectLetters.length >= 6;
-    const isWinner = wordToGuess.split("").every(letter => guessedLetters.includes(letter))
+    const isWinner = wordToGuess.split("").every(letter => guessedLetters.includes(letter));
 
     const addGuessedLetter = useCallback((letter: string) => {
         if (guessedLetters.includes(letter) || isWinner || isLoser) return;
         setGuessedLetters(currentLetters => [...currentLetters, letter]);
     }, [guessedLetters, isWinner, isLoser]);
 
-
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            const key = e.key
-            if (!key.match(/[a-z]/i)) return;
+            const key = e.key.toLowerCase();
+            if (key === "enter") {
+                e.preventDefault();
+                setGuessedLetters([]);
+                setWordToGuess(getWord());
+            } else if (key >= "a" && key <= "z" && !isWinner && !isLoser) {
+                e.preventDefault();
+                addGuessedLetter(key);
+            }
+        };
 
-            e.preventDefault()
-            addGuessedLetter(key)
-        }
-
-        document.addEventListener("keypress", handler)
-
-        return () => {
-            document.removeEventListener("keypress", handler)
-        }
-    }, [guessedLetters])
-
-    useEffect(() => {
-        const handler = (e: KeyboardEvent) => {
-            const key = e.key
-            if (key !== "Enter") return
-
-            e.preventDefault()
-            setGuessedLetters([])
-            setWordToGuess(getWord())
-        }
-
-        document.addEventListener("keypress", handler)
+        document.addEventListener("keypress", handler);
 
         return () => {
-            document.removeEventListener("keypress", handler)
-        }
-    }, [])
-
+            document.removeEventListener("keypress", handler);
+        };
+    }, [addGuessedLetter, isWinner, isLoser]);
 
     return (
         <div className="max-w-[1300px] flex flex-col gap-8 m-auto items-center p-10">
@@ -77,7 +61,7 @@ function App() {
                 addGuessedLetter={addGuessedLetter}
             />
         </div>
-    )
-}
+    );
+};
 
-export default App
+export default App;
