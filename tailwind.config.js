@@ -47,7 +47,7 @@ export default {
                 'custom': '0.5rem',
             },
             fontSize: {
-                'custom-xl': '1.5rem',
+                '2.5rem': '2.5rem',
             },
             spacing: {
                 '0.25em': '0.25em',
