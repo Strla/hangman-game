@@ -1,11 +1,13 @@
 import {configureStore} from '@reduxjs/toolkit';
 import hangmanReducer from './hangmanSlice';
 import userReducer from './userSlice';
+import highscoreReducer from './highscoreSlice';
 
 const store = configureStore({
     reducer: {
         hangman: hangmanReducer,
         user: userReducer,
+        highscore: highscoreReducer,
     },
 });
 

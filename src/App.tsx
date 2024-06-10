@@ -3,9 +3,10 @@ import HangmanDrawing from './components/HangmanDrawing';
 import HangmanWord from './components/HangmanWord';
 import Keyboard from './components/Keyboard';
 import {addGuessedLetter, fetchWord, resetGame, setEndTime} from './store/hangmanSlice';
-import {submitHighscore} from './store/highscoreSlice';
+import {fetchHighscores, submitHighscore} from './store/highscoreSlice';
 import {useAppDispatch, useAppSelector} from './store/hooks';
 import WelcomeScreen from './components/WelcomeScreen';
+import HighscoreTable from './components/HighscoreTable';
 
 const MAX_ATTEMPTS = 6;
 
@@ -24,6 +25,9 @@ const App = () => {
     } = useAppSelector((state) => state.hangman);
     const username = useAppSelector((state) => state.user.username);
     const [gameStarted, setGameStarted] = useState(false);
+    const [gameEnded, setGameEnded] = useState(false);
+    const [showHighscoreButton, setShowHighscoreButton] = useState(false);
+    const [showHighscore, setShowHighscore] = useState(false);
 
     useEffect(() => {
         if (gameStarted) {
@@ -41,11 +45,12 @@ const App = () => {
             if (isWinner && startTime !== null) {
                 dispatch(setEndTime());
             }
+            setGameEnded(true);
         }
     }, [isWinner, isLoser, startTime, dispatch]);
 
     useEffect(() => {
-        if (isWinner && endTime !== null) {
+        if (gameEnded && isWinner && endTime !== null) {
             const duration = endTime! - startTime!;
             const uniqueCharacters = new Set(wordToGuess.replace(/[^a-z]/gi, '').toLowerCase()).size;
             const highscoreData = {
@@ -56,9 +61,11 @@ const App = () => {
                 errors,
                 duration,
             };
-            dispatch(submitHighscore(highscoreData));
+            dispatch(submitHighscore(highscoreData)).then(() => {
+                setShowHighscoreButton(true);
+            });
         }
-    }, [isWinner, endTime, dispatch, quoteId, quoteLength, wordToGuess, username, errors, startTime]);
+    }, [gameEnded, isWinner, endTime, dispatch, quoteId, quoteLength, wordToGuess, username, errors, startTime]);
 
     const handleAddGuessedLetter = (letter: string) => {
         if (guessedLetters.includes(letter) || isWinner || isLoser) return;
@@ -70,6 +77,9 @@ const App = () => {
         if (key === 'enter') {
             dispatch(resetGame());
             dispatch(fetchWord());
+            setShowHighscore(false);
+            setShowHighscoreButton(false);
+            setGameEnded(false);
         } else if (key >= 'a' && key <= 'z' && !isWinner && !isLoser) {
             handleAddGuessedLetter(key);
         }
@@ -85,10 +95,36 @@ const App = () => {
     const handleRestart = () => {
         dispatch(resetGame());
         dispatch(fetchWord());
+        setShowHighscore(false);
+        setShowHighscoreButton(false);
+        setGameEnded(false);
+    };
+
+    const handleShowHighscore = () => {
+        dispatch(fetchHighscores()).then(() => {
+            setShowHighscore(true);
+        });
     };
 
     if (!gameStarted) {
         return <WelcomeScreen onStartGame={() => setGameStarted(true)}/>;
+    }
+
+    if (showHighscore) {
+        return (
+            <div className="max-w-[1300px] flex flex-col gap-8 m-auto items-center p-10">
+                <div className="flex justify-between items-center w-full">
+                    <div className="text-2xl mb-4">Welcome, {username}!</div>
+                    <button
+                        onClick={handleRestart}
+                        className="mt-4 p-2 bg-blue-500 text-white rounded"
+                    >
+                        Restart Game
+                    </button>
+                </div>
+                <HighscoreTable/>
+            </div>
+        );
     }
 
     return (
@@ -98,12 +134,22 @@ const App = () => {
                 <div className="text-xl">
                     Attempts left: {MAX_ATTEMPTS - incorrectLetters.length}
                 </div>
-                <button
-                    onClick={handleRestart}
-                    className="mt-4 p-2 bg-blue-500 text-white rounded"
-                >
-                    Restart Game
-                </button>
+                <div className="flex flex-col gap-2">
+                    <button
+                        onClick={handleRestart}
+                        className="mt-4 p-2 bg-blue-500 text-white rounded"
+                    >
+                        Restart Game
+                    </button>
+                    {isWinner && showHighscoreButton && (
+                        <button
+                            onClick={handleShowHighscore}
+                            className="mt-4 p-2 bg-blue-500 text-white rounded"
+                        >
+                            See Highscores
+                        </button>
+                    )}
+                </div>
             </div>
             {loading && <div>Loading...</div>}
             {error && <div>Error: {error}</div>}
