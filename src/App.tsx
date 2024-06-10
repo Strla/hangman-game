@@ -2,7 +2,8 @@ import {useEffect, useState} from 'react';
 import HangmanDrawing from './components/HangmanDrawing';
 import HangmanWord from './components/HangmanWord';
 import Keyboard from './components/Keyboard';
-import {addGuessedLetter, fetchWord, resetGame} from './store/hangmanSlice';
+import {addGuessedLetter, fetchWord, resetGame, setEndTime} from './store/hangmanSlice';
+import {submitHighscore} from './store/highscoreSlice';
 import {useAppDispatch, useAppSelector} from './store/hooks';
 import WelcomeScreen from './components/WelcomeScreen';
 
@@ -10,7 +11,17 @@ const MAX_ATTEMPTS = 6;
 
 const App = () => {
     const dispatch = useAppDispatch();
-    const {wordToGuess, guessedLetters, loading, error} = useAppSelector((state) => state.hangman);
+    const {
+        wordToGuess,
+        guessedLetters,
+        loading,
+        error,
+        startTime,
+        endTime,
+        errors,
+        quoteId,
+        quoteLength
+    } = useAppSelector((state) => state.hangman);
     const username = useAppSelector((state) => state.user.username);
     const [gameStarted, setGameStarted] = useState(false);
 
@@ -27,8 +38,27 @@ const App = () => {
     useEffect(() => {
         if (isWinner || isLoser) {
             window.scrollTo(0, 0);
+            if (isWinner && startTime !== null) {
+                dispatch(setEndTime());
+            }
         }
-    }, [isWinner, isLoser]);
+    }, [isWinner, isLoser, startTime, dispatch]);
+
+    useEffect(() => {
+        if (isWinner && endTime !== null) {
+            const duration = endTime! - startTime!;
+            const uniqueCharacters = new Set(wordToGuess.replace(/[^a-z]/gi, '').toLowerCase()).size;
+            const highscoreData = {
+                quoteId: quoteId!,
+                length: quoteLength!,
+                uniqueCharacters,
+                userName: username,
+                errors,
+                duration,
+            };
+            dispatch(submitHighscore(highscoreData));
+        }
+    }, [isWinner, endTime, dispatch, quoteId, quoteLength, wordToGuess, username, errors, startTime]);
 
     const handleAddGuessedLetter = (letter: string) => {
         if (guessedLetters.includes(letter) || isWinner || isLoser) return;
