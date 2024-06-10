@@ -37,34 +37,10 @@ Once the dependencies are installed, you can run the app locally:
 
 2. Open your web browser and go to [http://localhost:5173](http://localhost:5173) to see the app running.
 
-## Project Structure
-
-Here's an overview of the project's structure:
-
- ```bash
-hangman-game/
-├── public/
-│   ├── index.html
-│   └── ...
-├── src/
-│   ├── components/
-│   │   ├── HangmanDrawing.tsx
-│   │   ├── HangmanWord.tsx
-│   │   ├── Keyboard.tsx
-│   │   └── ...
-│   ├── hooks/
-│   │   └── useQuote.ts
-│   ├── store/
-│   │   ├── hangmanSlice.ts
-│   │   ├── hooks.ts
-│   │   └── store.ts
-│   ├── App.tsx
-│   ├── index.tsx
-│   └── ...
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+## Running the tests
+   ```bash
+    npm test
+ ```
 
 ## Technologies Used
 

@@ -1,5 +1,6 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 import axios from 'axios';
+import {calculateScore} from '../utils/score';
 
 interface Highscore {
     userName: string;
@@ -30,7 +31,7 @@ const initialState: HighscoreState = {
 export const submitHighscore = createAsyncThunk(
     'highscore/submitHighscore',
     async (highscoreData: HighscoreData) => {
-        const response = await axios.post(
+        await axios.post(
             'https://my-json-server.typicode.com/stanko-ingemark/hang_the_wise_man_frontend_task/highscores',
             highscoreData,
             {
@@ -39,17 +40,24 @@ export const submitHighscore = createAsyncThunk(
                 }
             }
         );
-        return response.data;
+        return {
+            userName: highscoreData.userName,
+            score: calculateScore(highscoreData.length, highscoreData.uniqueCharacters, highscoreData.errors, highscoreData.duration),
+        };
     }
 );
 
 export const fetchHighscores = createAsyncThunk(
     'highscore/fetchHighscores',
     async () => {
-        const response = await axios.get(
+        const data = await axios.get(
             'https://my-json-server.typicode.com/stanko-ingemark/hang_the_wise_man_frontend_task/highscores'
-        );
-        return response.data;
+        ).then(response => response.data);
+
+        return data.map((score: HighscoreData) => ({
+            userName: score.userName,
+            score: calculateScore(score.length, score.uniqueCharacters, score.errors, score.duration),
+        }));
     }
 );
 
@@ -63,8 +71,9 @@ const highscoreSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(submitHighscore.fulfilled, (state) => {
+            .addCase(submitHighscore.fulfilled, (state, action) => {
                 state.loading = false;
+                state.highscores = [...state.highscores, action.payload].sort((a: Highscore, b: Highscore) => b.score - a.score);
             })
             .addCase(submitHighscore.rejected, (state, action) => {
                 state.loading = false;
@@ -76,12 +85,7 @@ const highscoreSlice = createSlice({
             })
             .addCase(fetchHighscores.fulfilled, (state, action) => {
                 state.loading = false;
-                state.highscores = action.payload
-                    .map((score: HighscoreData) => ({
-                        userName: score.userName,
-                        score: 100 / (1 + score.errors),
-                    }))
-                    .sort((a: Highscore, b: Highscore) => b.score - a.score);
+                state.highscores = action.payload.sort((a: Highscore, b: Highscore) => b.score - a.score);
             })
             .addCase(fetchHighscores.rejected, (state, action) => {
                 state.loading = false;

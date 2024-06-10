@@ -1,13 +1,7 @@
 import {useAppSelector} from '../store/hooks';
-import {RootState} from "../store";
-
-interface Highscore {
-    userName: string;
-    score: number;
-}
 
 const HighscoreTable = () => {
-    const {highscores, loading, error} = useAppSelector((state: RootState) => state.highscore);
+    const {highscores, loading, error} = useAppSelector((state) => state.highscore);
 
     if (loading) {
         return <div>Loading high scores...</div>;
@@ -28,7 +22,7 @@ const HighscoreTable = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {highscores.map((highscore: Highscore, index: number) => (
+                {highscores.map((highscore, index) => (
                     <tr key={index}>
                         <td className="border px-4 py-2">{highscore.userName}</td>
                         <td className="border px-4 py-2">{highscore.score.toFixed(2)}</td>
