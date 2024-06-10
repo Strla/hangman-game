@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import HangmanDrawing from './components/HangmanDrawing';
 import HangmanWord from './components/HangmanWord';
 import Keyboard from './components/Keyboard';
@@ -21,24 +21,34 @@ const App = () => {
         endTime,
         errors,
         quoteId,
-        quoteLength
+        quoteLength,
     } = useAppSelector((state) => state.hangman);
     const username = useAppSelector((state) => state.user.username);
+
     const [gameStarted, setGameStarted] = useState(false);
     const [gameEnded, setGameEnded] = useState(false);
     const [showHighscoreButton, setShowHighscoreButton] = useState(false);
     const [showHighscore, setShowHighscore] = useState(false);
 
+    // Fetch a new word when the game starts
     useEffect(() => {
         if (gameStarted) {
             dispatch(fetchWord());
         }
     }, [dispatch, gameStarted]);
 
-    const incorrectLetters = guessedLetters.filter(letter => !wordToGuess.includes(letter));
-    const isLoser = incorrectLetters.length >= MAX_ATTEMPTS;
-    const isWinner = wordToGuess.split("").filter(char => char.match(/[a-z]/i)).every(letter => guessedLetters.includes(letter));
+    const incorrectLetters = useMemo(
+        () => guessedLetters.filter((letter) => !wordToGuess.includes(letter)),
+        [guessedLetters, wordToGuess]
+    );
 
+    const isLoser = incorrectLetters.length >= MAX_ATTEMPTS;
+    const isWinner = useMemo(
+        () => wordToGuess.split('').filter((char) => char.match(/[a-z]/i)).every((letter) => guessedLetters.includes(letter)),
+        [wordToGuess, guessedLetters]
+    );
+
+    // Handle game end logic
     useEffect(() => {
         if (isWinner || isLoser) {
             window.scrollTo(0, 0);
@@ -49,9 +59,10 @@ const App = () => {
         }
     }, [isWinner, isLoser, startTime, dispatch]);
 
+    // Handle highscore submission
     useEffect(() => {
-        if (gameEnded && isWinner && endTime !== null) {
-            const duration = endTime! - startTime!;
+        if (gameEnded && isWinner && endTime !== null && startTime !== null) {
+            const duration = endTime - startTime;
             const uniqueCharacters = new Set(wordToGuess.replace(/[^a-z]/gi, '').toLowerCase()).size;
             const highscoreData = {
                 quoteId: quoteId!,
@@ -67,44 +78,50 @@ const App = () => {
         }
     }, [gameEnded, isWinner, endTime, dispatch, quoteId, quoteLength, wordToGuess, username, errors, startTime]);
 
-    const handleAddGuessedLetter = (letter: string) => {
-        if (guessedLetters.includes(letter) || isWinner || isLoser) return;
-        dispatch(addGuessedLetter(letter));
-    };
+    const handleAddGuessedLetter = useCallback(
+        (letter: string) => {
+            if (guessedLetters.includes(letter) || isWinner || isLoser) return;
+            dispatch(addGuessedLetter(letter));
+        },
+        [guessedLetters, isWinner, isLoser, dispatch]
+    );
 
-    const handleKeyPress = (e: KeyboardEvent) => {
-        const key = e.key.toLowerCase();
-        if (key === 'enter') {
-            dispatch(resetGame());
-            dispatch(fetchWord());
-            setShowHighscore(false);
-            setShowHighscoreButton(false);
-            setGameEnded(false);
-        } else if (key >= 'a' && key <= 'z' && !isWinner && !isLoser) {
-            handleAddGuessedLetter(key);
-        }
-    };
+    const handleKeyPress = useCallback(
+        (e: KeyboardEvent) => {
+            const key = e.key.toLowerCase();
+            if (key === 'enter') {
+                dispatch(resetGame());
+                dispatch(fetchWord());
+                setShowHighscore(false);
+                setShowHighscoreButton(false);
+                setGameEnded(false);
+            } else if (key >= 'a' && key <= 'z' && !isWinner && !isLoser) {
+                handleAddGuessedLetter(key);
+            }
+        },
+        [dispatch, handleAddGuessedLetter, isWinner, isLoser]
+    );
 
     useEffect(() => {
         document.addEventListener('keypress', handleKeyPress);
         return () => {
             document.removeEventListener('keypress', handleKeyPress);
         };
-    }, [guessedLetters, isWinner, isLoser]);
+    }, [handleKeyPress]);
 
-    const handleRestart = () => {
+    const handleRestart = useCallback(() => {
         dispatch(resetGame());
         dispatch(fetchWord());
         setShowHighscore(false);
         setShowHighscoreButton(false);
         setGameEnded(false);
-    };
+    }, [dispatch]);
 
-    const handleShowHighscore = () => {
+    const handleShowHighscore = useCallback(() => {
         dispatch(fetchHighscores()).then(() => {
             setShowHighscore(true);
         });
-    };
+    }, [dispatch]);
 
     if (!gameStarted) {
         return <WelcomeScreen onStartGame={() => setGameStarted(true)}/>;
@@ -113,15 +130,7 @@ const App = () => {
     if (showHighscore) {
         return (
             <div className="max-w-[1300px] flex flex-col gap-8 m-auto items-center p-10">
-                <div className="flex justify-between items-center w-full">
-                    <div className="text-2xl mb-4">Welcome, {username}!</div>
-                    <button
-                        onClick={handleRestart}
-                        className="mt-4 p-2 bg-blue-500 text-white rounded"
-                    >
-                        Restart Game
-                    </button>
-                </div>
+                <Header username={username} onRestart={handleRestart}/>
                 <HighscoreTable/>
             </div>
         );
@@ -129,50 +138,44 @@ const App = () => {
 
     return (
         <div className="max-w-[1300px] flex flex-col gap-8 m-auto items-center p-10">
-            <div className="flex justify-between items-center w-full">
-                <div className="text-2xl mb-4">Welcome, {username}!</div>
-                <div className="text-xl">
-                    Attempts left: {MAX_ATTEMPTS - incorrectLetters.length}
-                </div>
-                <div className="flex flex-col gap-2">
-                    <button
-                        onClick={handleRestart}
-                        className="mt-4 p-2 bg-blue-500 text-white rounded"
-                    >
-                        Restart Game
-                    </button>
-                    {isWinner && showHighscoreButton && (
-                        <button
-                            onClick={handleShowHighscore}
-                            className="mt-4 p-2 bg-blue-500 text-white rounded"
-                        >
-                            See Highscores
-                        </button>
-                    )}
-                </div>
-            </div>
+            <Header username={username} onRestart={handleRestart}/>
+            {isWinner && showHighscoreButton && (
+                <button onClick={handleShowHighscore} className="mt-4 p-2 bg-blue-500 text-white rounded">
+                    See Highscores
+                </button>
+            )}
+            <div className="text-xl">Attempts left: {MAX_ATTEMPTS - incorrectLetters.length}</div>
             {loading && <div>Loading...</div>}
             {error && <div>Error: {error}</div>}
             {!loading && !error && (
                 <>
-                    <div
-                        className={`text-5xl text-center ${isWinner ? 'text-green-500' : isLoser ? 'text-red-500' : ''}`}>
-                        {isWinner && "Winner! - Press 'Enter' to try again"}
-                        {isLoser && "You Lost - Press 'Enter' to try again"}
-                    </div>
+                    <ResultMessage isWinner={isWinner} isLoser={isLoser}/>
                     <HangmanDrawing numberOfGuesses={incorrectLetters.length}/>
                     <HangmanWord guessedLetters={guessedLetters} wordToGuess={wordToGuess} revealWord={isLoser}
                                  isWinner={isWinner}/>
-                    <Keyboard
-                        disabled={isLoser || isWinner}
-                        activeLetters={guessedLetters.filter(letter => wordToGuess.includes(letter))}
-                        inactiveLetters={incorrectLetters}
-                        addGuessedLetter={handleAddGuessedLetter}
-                    />
+                    <Keyboard disabled={isLoser || isWinner}
+                              activeLetters={guessedLetters.filter((letter) => wordToGuess.includes(letter))}
+                              inactiveLetters={incorrectLetters} addGuessedLetter={handleAddGuessedLetter}/>
                 </>
             )}
         </div>
     );
 };
+
+const Header = ({username, onRestart}: { username: string; onRestart: () => void }) => (
+    <div className="flex justify-between items-center w-full">
+        <div className="text-2xl mb-4">Welcome, {username}!</div>
+        <button onClick={onRestart} className="mt-4 p-2 bg-blue-500 text-white rounded">
+            Restart Game
+        </button>
+    </div>
+);
+
+const ResultMessage = ({isWinner, isLoser}: { isWinner: boolean; isLoser: boolean }) => (
+    <div className={`text-5xl text-center ${isWinner ? 'text-green-500' : isLoser ? 'text-red-500' : ''}`}>
+        {isWinner && "Winner! - Press 'Enter' to try again"}
+        {isLoser && "You Lost - Press 'Enter' to try again"}
+    </div>
+);
 
 export default App;
