@@ -26,9 +26,10 @@ const initialState: HangmanState = {
 };
 
 export const fetchWord = createAsyncThunk('hangman/fetchWord', async () => {
-    const response = await axios.get('https://api.quotable.io/random');
+    const response = await axios.get('/api/random');
     return response.data;
 });
+
 
 const hangmanSlice = createSlice({
     name: 'hangman',
